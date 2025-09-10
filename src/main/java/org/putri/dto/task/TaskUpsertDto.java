@@ -9,7 +9,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Task")
 public class TaskUpsertDto {
 
-    @Schema(description = "Unique identifier of the task", examples = "null")
+    @Schema(description = "Unique identifier of the task", examples = "1")
     private Long taskId;
 
     @Schema(description = "Judul task", examples = "Task 1")

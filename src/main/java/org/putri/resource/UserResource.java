@@ -1,13 +1,10 @@
 package org.putri.resource;
 
-import java.time.Duration;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
-import org.modelmapper.ModelMapper;
 import org.putri.dto.user.UserDeleteDto;
 import org.putri.dto.user.UserListDto;
 import org.putri.dto.user.UserLoginDto;
@@ -15,6 +12,8 @@ import org.putri.dto.user.UserUpsertDto;
 import org.putri.entity.User;
 import org.putri.repository.UserRepository;
 import org.putri.response.ApiResponse;
+import org.putri.service.AuthService;
+import org.putri.service.UserService;
 
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.inject.Inject;
@@ -31,16 +30,17 @@ public class UserResource {
     @Inject
     UserRepository userRepository;
 
-    ModelMapper modelMapper = new ModelMapper();
+    @Inject
+    UserService userService;
+
+    @Inject
+    AuthService authService;
 
     @GET
     @Operation(summary = "Get All user", description = "Semua Detail user")
     @Path("/get-all-user")
     public Response getUser() {
-        List<User> user = userRepository.find("deletedAt is null").list();
-        List<UserListDto> dtos = user.stream()
-                .map(v -> modelMapper.map(v, UserListDto.class))
-                .toList();
+        List<UserListDto> dtos = userService.getAllUser();
         return Response.ok(new ApiResponse<>("Success", 200, dtos)).build();
     }
 
@@ -56,16 +56,7 @@ public class UserResource {
                     .entity(new ApiResponse<>("Email already exists, please use another emails", 404, null))
                     .build();
         }
-
-        User user = new User();
-        user.email = userDto.getEmail();
-        user.password = BcryptUtil.bcryptHash(userDto.getPassword());
-        user.username = userDto.getUsername();
-        user.createdAt = new Date();
-
-        userRepository.persist(user);
-        userDto.setUserId(user.id);
-
+        userService.createUser(userDto);
         return Response.ok(new ApiResponse<>("Success", 201, userDto)).build();
     }
 
@@ -80,11 +71,7 @@ public class UserResource {
                     .entity(new ApiResponse<>("User not found", 404, null))
                     .build();
         }
-        user.email = userDto.getEmail();
-        user.password = BcryptUtil.bcryptHash(userDto.getPassword());
-        user.username = userDto.getUsername();
-        user.updatedAt = new Date();
-
+        userService.updateUser(userDto, user);
         return Response.ok(new ApiResponse<>("Success", 200, userDto)).build();
     }
 
@@ -94,7 +81,12 @@ public class UserResource {
     @Operation(summary = "Delete user", description = "Menghapus user yang sudah terdaftar")
     public Response deleteUser(UserDeleteDto userDeleteDto) {
         User user = userRepository.findById(userDeleteDto.getUserId());
-        user.deletedAt = new Date();
+        if (user == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(new ApiResponse<>("User not found", 404, null))
+                    .build();
+        }
+        userService.deleteUser(userDeleteDto, user);
         return Response.ok(new ApiResponse<>("Succes", 200, userDeleteDto)).build();
 
     }
@@ -112,15 +104,7 @@ public class UserResource {
                     .build();
         }
 
-        // Generate JWT token
-        String token = io.smallrye.jwt.build.Jwt.issuer("putri-app")
-                .upn(user.email) // Subject
-                .claim("id", user.id) // Custom claim: id
-                .claim("username", user.username) // Custom claim: username
-                .claim("email", user.email) // Custom claim: email
-                .expiresIn(Duration.ofHours(2)) // Token valid 2 jam
-                .sign(); // Sign dengan private key
-
+        String token = authService.genereateToken(user);
         // Response body
         Map<String, Object> responseBody = new HashMap<>();
         responseBody.put("token", token);
