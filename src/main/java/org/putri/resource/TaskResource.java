@@ -80,4 +80,12 @@ public class TaskResource {
         return Response.ok(new ApiResponse<>("Success", 200, taskDeleteDto)).build();
 
     }
+
+    @GET
+    @Path("/user/{userId}")
+    @Operation(summary = "Get Tasks by User ID", description = "Retrieve all tasks associated with a specific user ID")
+    public Response getTasksByUserId(@PathParam("userId") Long userId) {
+        List<Task> tasks = taskRepository.getTasksByUserId(userId);
+        return Response.ok(new ApiResponse<>("Success", 200, tasks)).build();
+    }
 }
