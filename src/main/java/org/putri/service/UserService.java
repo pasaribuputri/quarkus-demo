@@ -1,5 +1,7 @@
 package org.putri.service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
@@ -30,10 +32,18 @@ public class UserService {
     }
 
     public void createUser(UserUpsertDto userUpsertDto) {
+        LocalDate birthDate = LocalDate.parse(userUpsertDto.birthDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
         User user = new User();
         user.email = userUpsertDto.getEmail();
         user.password = BcryptUtil.bcryptHash(userUpsertDto.getPassword());
         user.username = userUpsertDto.getUsername();
+        user.fullname = userUpsertDto.getFullname();
+        user.address = userUpsertDto.getAddress();
+        user.phoneNumber = userUpsertDto.getPhoneNumber();
+        user.JobTitle = userUpsertDto.getJobTitle();
+        user.profilePath = userUpsertDto.getProfilePath();
+        user.birthDate = java.sql.Date.valueOf(birthDate);
         user.createdAt = new Date();
 
         userRepository.persist(user);
@@ -41,9 +51,17 @@ public class UserService {
     }
 
     public void updateUser(UserUpsertDto userUpsertDto, User user) {
+        LocalDate birthDate = LocalDate.parse(userUpsertDto.birthDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
         user.email = userUpsertDto.getEmail();
         user.password = BcryptUtil.bcryptHash(userUpsertDto.getPassword());
         user.username = userUpsertDto.getUsername();
+        user.fullname = userUpsertDto.getFullname();
+        user.address = userUpsertDto.getAddress();
+        user.phoneNumber = userUpsertDto.getPhoneNumber();
+        user.JobTitle = userUpsertDto.getJobTitle();
+        user.profilePath = userUpsertDto.getProfilePath();
+        user.birthDate = java.sql.Date.valueOf(birthDate);
         user.updatedAt = new Date();
     }
 
